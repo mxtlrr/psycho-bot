@@ -109,7 +109,7 @@ async def get_info(ctx, drug):
 
 	embed = discord.Embed(
 		title=name,
-		description=f"{name}, is \"{description}\".\nDoses:\n**Light**: {doses[0]}\n\n**Common**:{doses[1]}\n\n**Strong**:{doses[2]}"
+		description=f"{name}, is \"{description}\".\nDoses:\n**Light**: {doses[0]}\n\n**Common**:{doses[1]}\n\n**Strong**:{doses[2]}\n\n**UNITS ARE IN {units}**"
 	)
 
 	await ctx.send(embed=embed)
