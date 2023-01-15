@@ -1,7 +1,7 @@
 import requests, json
 count = 1
 
-from sys import argv
+import sys
 
 # Headers sent to the API.
 headers = { "accept-type": "application/json", "content-type": "application/json" }
@@ -68,6 +68,7 @@ from datetime import datetime
 
 import downloader
 import os, shutil
+import wikipediaapi
 
 prefix = ">"
 
@@ -75,11 +76,22 @@ intents = discord.Intents.default()
 intents.message_content = True
 client = commands.Bot(command_prefix=prefix, intents=intents)
 
-token = open(f"{argv[1]}", "r").read().replace('\n','')
+if len(sys.argv) != 2:
+	print("You need to pass in your token file (.env)!")
+	exit(9)
+
+# Open token file and remove the "TOKEN=" part
+token = open(f"{sys.argv[1]}", "r").read().replace('\n','').replace("TOKEN=", "")
+
 
 @client.event
 async def on_ready():
-  print("I have started up!")
+	print("I have started up!")
+	# Update bot precense
+	activity = discord.Activity(type=discord.ActivityType.watching,
+															name="the psychonaut wiki")
+	await client.change_presence(activity=activity)
+	print("Status is updated")
 
 
 @client.command()
@@ -108,9 +120,16 @@ async def get_info(ctx, drug):
 				#print duration information
 				duration = subs['roas'][0]['duration']
 
+		wiki_wiki = wikipediaapi.Wikipedia('en')
+
+		page_py = wiki_wiki.page("MDMA")
+		p: str = page_py.summary
+		k = p.find('.')
+
 
 	embed = discord.Embed(
 		title=name,
+		description=f"{page_py.summary[0:k+1]}", # Required since PsychonautWIKI doesn't have the summary.
 		url=f"https://psychonautwiki.org/wiki/{name}",
 		color=0x5978ab
 	)
