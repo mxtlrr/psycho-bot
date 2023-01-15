@@ -63,6 +63,8 @@ import discord
 from discord.ext import commands
 from datetime import datetime
 
+import downloader
+
 prefix = ">"
 
 intents = discord.Intents.default()
@@ -113,9 +115,7 @@ async def get_info(ctx, drug):
 	# Add field for each dosages
 	embed.add_field(name="Light Doses", value=f"{doses[0]}", inline=True)
 	embed.add_field(name="Common Doses", value=f"{doses[1]}", inline=True)
-	embed.add_field(name="Strong Doses", value=f"{doses[2]}", inline=False)
-	
-	
+	embed.add_field(name="Strong Doses", value=f"{doses[2]}", inline=False)	
 
 	await ctx.send(embed=embed)
 
