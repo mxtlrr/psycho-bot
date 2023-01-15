@@ -1,4 +1,7 @@
 import requests, json
+count = 1
+
+from sys import argv
 
 # Headers sent to the API.
 headers = { "accept-type": "application/json", "content-type": "application/json" }
@@ -64,6 +67,7 @@ from discord.ext import commands
 from datetime import datetime
 
 import downloader
+import os, shutil
 
 prefix = ">"
 
@@ -71,7 +75,7 @@ intents = discord.Intents.default()
 intents.message_content = True
 client = commands.Bot(command_prefix=prefix, intents=intents)
 
-token = open(".env", "r").read().replace('\n','')
+token = open(f"{argv[1]}", "r").read().replace('\n','')
 
 @client.event
 async def on_ready():
@@ -110,13 +114,38 @@ async def get_info(ctx, drug):
 		color=0x5978ab
 	)
 
-	embed.set_footer(text=f"Sent at {datetime.now()} // Pictures taken from Google Images")
+	embed.set_footer(text=f"Sent at {datetime.now().strftime('%Y/%m/%d %I:%M:%S %p')} • Pictures may not be correct")
 	
 	# Add field for each dosages
 	embed.add_field(name="Light Doses", value=f"{doses[0]}", inline=True)
 	embed.add_field(name="Common Doses", value=f"{doses[1]}", inline=True)
 	embed.add_field(name="Strong Doses", value=f"{doses[2]}", inline=False)	
 
-	await ctx.send(embed=embed)
+	# Download image
+	
+	# This will be renovated a shitton in the future
+	downloader.DownloadImage(drug, "downloads", amount=1) # 1 image
+	global count
+	count += 1
+
+	if os.path.exists(f"downloads/{drug}"):
+		print("Download sucessful I think")
+		try:
+			f = open(f"downloads/{drug}/Image_1.png", "r")
+			file = discord.File(f"downloads/{drug}/Image_1.jpg", filename="thumb.png")
+			embed.set_thumbnail(url="attachment://thumb.png")
+			await ctx.send(file=file, embed=embed)
+		except:
+			f = open(f"downloads/{drug}/Image_1.jpg", "r")
+			file = discord.File(f"downloads/{drug}/Image_1.jpg", filename="thumb.jpg")
+			embed.set_thumbnail(url="attachment://thumb.jpg")
+			await ctx.send(file=file, embed=embed)
+		print("Removing downloads directory to prevent odd conflicts")
+		shutil.rmtree("downloads/")
+		print("Removed!")
+	else:
+		print("I could not download..sending embed without file")
+		await ctx.send(embed=embed)
+
 
 client.run(token)
