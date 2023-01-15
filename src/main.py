@@ -86,26 +86,27 @@ async def on_ready():
 async def get_info(ctx, drug):
 	print(f"Recieved {prefix}{drug}!")
 
-	response = send_request(drug)
-	if "data" in response:
-		units = ""
-		doses = [0, 0, 0]
-		description = ""
-		name = ""
+	async with ctx.typing():
+		response = send_request(drug)
+		if "data" in response:
+			units = ""
+			doses = [0, 0, 0]
+			description = ""
+			name = ""
 
-		for subs in response["data"]["substances"]:
-			#print name
-			name = subs['name']
-			description = subs['summary']
-			_doses = subs['roas'][0]['dose']
-			units: str = _doses["units"]
+			for subs in response["data"]["substances"]:
+				#print name
+				name = subs['name']
+				description = subs['summary']
+				_doses = subs['roas'][0]['dose']
+				units: str = _doses["units"]
 
-			doses[0] = expand(_doses['light'], units)
-			doses[1] = expand(_doses['common'], units)
-			doses[2] = expand(_doses['strong'], units)
+				doses[0] = expand(_doses['light'], units)
+				doses[1] = expand(_doses['common'], units)
+				doses[2] = expand(_doses['strong'], units)
 
-			#print duration information
-			duration = subs['roas'][0]['duration']
+				#print duration information
+				duration = subs['roas'][0]['duration']
 
 
 	embed = discord.Embed(
