@@ -8,6 +8,7 @@ Discord bot that grabs info from PsychonautWiki and formats it onto discord.
 You will need:
 - `bing_image_downloader` for the images in the embed
 - `discord.py`
+- `wikipedia-api` for the summary of drugs
 
 Then, write
 ```
