@@ -3,13 +3,12 @@ import requests, json
 # Headers sent to the API.
 headers = { "accept-type": "application/json", "content-type": "application/json" }
 
-def expand(data):
+def expand(data, unit: str):
   try:
     if "min" and "max" in data:
-      return f"""
-Min: {data['min']}
-Max: {data['max']}
-        """
+			# For example:
+			# 20mg - 50mg
+      return f"{data['min']}{unit} - {data['max']}{unit}"
   except:
     if data == None:
       return "No information"
@@ -52,6 +51,8 @@ def send_request(query):
 	}""" % query
 	}
 	json_payload = json.dumps(payload)
+
+	# Send the API request
 	api = requests.post("https://api.psychonautwiki.org/?",data=json_payload,headers=headers)
 	if api:
 		response = json.loads(api.text)
@@ -60,10 +61,13 @@ def send_request(query):
 # Setting up the discord bot
 import discord
 from discord.ext import commands
+from datetime import datetime
+
+prefix = ">"
 
 intents = discord.Intents.default()
 intents.message_content = True
-client = commands.Bot(command_prefix='>', intents=intents)
+client = commands.Bot(command_prefix=prefix, intents=intents)
 
 token = open(".env", "r").read().replace('\n','')
 
@@ -74,6 +78,8 @@ async def on_ready():
 
 @client.command()
 async def get_info(ctx, drug):
+	print(f"Recieved {prefix}{drug}!")
+
 	response = send_request(drug)
 	if "data" in response:
 		units = ""
@@ -82,35 +88,34 @@ async def get_info(ctx, drug):
 		name = ""
 
 		for subs in response["data"]["substances"]:
-			# nonlocal units
-			# nonlocal description
-			# nonlocal doses
-			# nonlocal name
-
 			#print name
 			name = subs['name']
 			description = subs['summary']
-
 			_doses = subs['roas'][0]['dose']
-			doses[0] = expand(_doses['light'])
-			doses[1] = expand(_doses['common'])
-			doses[2] = expand(_doses['strong'])
-			units = _doses["units"]
+			units: str = _doses["units"]
+
+			doses[0] = expand(_doses['light'], units)
+			doses[1] = expand(_doses['common'], units)
+			doses[2] = expand(_doses['strong'], units)
 
 			#print duration information
 			duration = subs['roas'][0]['duration']
-			print(f"Afterglow {expand(duration['afterglow'])}")
-			print(f"Comeup {expand(duration['comeup'])}")
-			print(f"Duration {expand(duration['duration'])}")
-			print(f"Offset {expand(duration['offset'])}")
-			print(f"Onset {expand(duration['onset'])}")
-			print(f"Peak {expand(duration['peak'])}")
-			print(f"Total {expand(duration['total'])}")
+
 
 	embed = discord.Embed(
 		title=name,
-		description=f"{name}, is \"{description}\".\nDoses:\n**Light**: {doses[0]}\n\n**Common**:{doses[1]}\n\n**Strong**:{doses[2]}\n\n**UNITS ARE IN {units}**"
+		url=f"https://psychonautwiki.org/wiki/{name}",
+		color=0x5978ab
 	)
+
+	embed.set_footer(text=f"Sent at {datetime.now()} // Pictures taken from Google Images")
+	
+	# Add field for each dosages
+	embed.add_field(name="Light Doses", value=f"{doses[0]}", inline=True)
+	embed.add_field(name="Common Doses", value=f"{doses[1]}", inline=True)
+	embed.add_field(name="Strong Doses", value=f"{doses[2]}", inline=False)
+	
+	
 
 	await ctx.send(embed=embed)
 
