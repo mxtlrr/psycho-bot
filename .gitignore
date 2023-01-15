@@ -1,1 +1,8 @@
+# Environment variables
 .env
+
+# Downloaded images
+src/downloads/
+
+# From the downloader module
+src/__pycache__/
