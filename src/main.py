@@ -64,6 +64,7 @@ def send_request(query):
 # Setting up the discord bot
 import discord
 from discord.ext import commands
+from discord.utils import get
 from datetime import datetime
 
 import downloader
@@ -96,13 +97,15 @@ async def on_ready():
 
 @client.command()
 async def get_info(ctx, drug):
+	page = 1
 	print(f"Recieved {prefix}{drug}!")
 
 	async with ctx.typing():
 		response = send_request(drug)
 		if "data" in response:
 			units = ""
-			doses = [0, 0, 0]
+			doses = [0, 0, 0, 0]
+			d2oses = [0, 0, 0, 0]
 			description = ""
 			name = ""
 
@@ -111,18 +114,30 @@ async def get_info(ctx, drug):
 				name = subs['name']
 				description = subs['summary']
 				_doses = subs['roas'][0]['dose']
+				method = subs['roas'][0]['name']
 				units: str = _doses["units"]
 
-				doses[0] = expand(_doses['light'], units)
-				doses[1] = expand(_doses['common'], units)
-				doses[2] = expand(_doses['strong'], units)
+				doses[0] = method
+				doses[1] = expand(_doses['light'], units)
+				doses[2] = expand(_doses['common'], units)
+				doses[3] = expand(_doses['strong'], units)
+
+				_dozes = subs['roas'][1]['dose']
+				m2thod = subs['roas'][1]['name']
+
+				d2oses[0] = m2thod
+				d2oses[1] =  expand(_dozes['light'], units)
+				d2oses[2] = expand(_dozes['common'], units)
+				d2oses[3] = expand(_dozes['strong'], units)
+
 
 				#print duration information
 				duration = subs['roas'][0]['duration']
 
 		wiki_wiki = wikipediaapi.Wikipedia('en')
 
-		page_py = wiki_wiki.page("MDMA")
+		# Need major refactoring
+		page_py = wiki_wiki.page(f"{drug}")
 		p: str = page_py.summary
 		k = p.find('.')
 
@@ -134,12 +149,12 @@ async def get_info(ctx, drug):
 		color=0x5978ab
 	)
 
-	embed.set_footer(text=f"Sent at {datetime.now().strftime('%Y/%m/%d %I:%M:%S %p')} • Pictures may not be correct")
+	embed.set_footer(text=f"Sent at {datetime.now().strftime('%Y/%m/%d %I:%M:%S %p')} • Pictures may not be correct • Page {page}")
 	
 	# Add field for each dosages
-	embed.add_field(name="Light Doses", value=f"{doses[0]}", inline=True)
-	embed.add_field(name="Common Doses", value=f"{doses[1]}", inline=True)
-	embed.add_field(name="Strong Doses", value=f"{doses[2]}", inline=False)	
+	embed.add_field(name="Light Doses", value=f"{doses[1]} ({doses[0]})", inline=True)
+	embed.add_field(name="Common Doses", value=f"{doses[2]} ({doses[0]})", inline=True)
+	embed.add_field(name="Strong Doses", value=f"{doses[3]} ({doses[0]})", inline=False)	
 
 	# Download image
 	
@@ -154,18 +169,50 @@ async def get_info(ctx, drug):
 			f = open(f"downloads/{drug}/Image_1.png", "r")
 			file = discord.File(f"downloads/{drug}/Image_1.jpg", filename="thumb.png")
 			embed.set_thumbnail(url="attachment://thumb.png")
-			await ctx.send(file=file, embed=embed)
+			__message = await ctx.send(file=file, embed=embed)
 		except:
-			f = open(f"downloads/{drug}/Image_1.jpg", "r")
-			file = discord.File(f"downloads/{drug}/Image_1.jpg", filename="thumb.jpg")
-			embed.set_thumbnail(url="attachment://thumb.jpg")
-			await ctx.send(file=file, embed=embed)
+			try:
+				f = open(f"downloads/{drug}/Image_1.jpg", "r")
+				file = discord.File(f"downloads/{drug}/Image_1.jpg", filename="thumb.jpg")
+				embed.set_thumbnail(url="attachment://thumb.jpg")
+				__message = await ctx.send(file=file, embed=embed)
+			except:
+				f = open(f"downloads/{drug}/Image_1.jpeg", "r")
+				file = discord.File(f"downloads/{drug}/Image_1.jpeg", filename="thumb.jpeg")
+				embed.set_thumbnail(url="attachment://thumb.jpeg")
+				__message = await ctx.send(file=file, embed=embed)
 		print("Removing downloads directory to prevent odd conflicts")
 		shutil.rmtree("downloads/")
 		print("Removed!")
 	else:
 		print("I could not download..sending embed without file")
-		await ctx.send(embed=embed)
+		__message = await ctx.send(embed=embed)
+
+	# Add reactions
+	reactions = ['⬅️', '➡️']
+	for emojis in reactions:
+		await __message.add_reaction(emojis)
+	print("Reactions added")
+
+	reaction, user = await client.wait_for('reaction_add', 
+	check=lambda reaction, user: reaction.emoji == '➡️')
+
+	page = 2
+
+	await __message.delete()
+	
+	page_2_embed = discord.Embed(
+		title=f"Page 2 • {drug}",
+		color=0x5978ab
+	)
+
+	page_2_embed.add_field(name="Light Doses", value=f"{d2oses[1]} ({d2oses[0]})", inline=True)
+	page_2_embed.add_field(name="Common Doses", value=f"{d2oses[2]} ({d2oses[0]})", inline=True)
+	page_2_embed.add_field(name="Strong Doses", value=f"{d2oses[3]} ({d2oses[0]})", inline=False)	
+
+	m2ss = await ctx.send(embed=page_2_embed)
+	await m2ss.add_reaction(reactions[0])
+	
 
 
 client.run(token)
